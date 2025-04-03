@@ -1,0 +1,22 @@
+# Git
+.git
+.gitignore
+
+# Build files
+target/
+!target/*.jar
+
+# Logs
+logs/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Docker
+Dockerfile
+.dockerignore
