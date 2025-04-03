@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appforsplunk
+  namespace: veltrix-splunk
+  labels:
+    app: appforsplunk
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: appforsplunk
+  template:
+    metadata:
+      labels:
+        app: appforsplunk
+    spec:
+      containers:
+      - name: appforsplunk
+        image: arunksalian/appforsplunk:1.0.1
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+      volumes:
+      - name: logs
+        emptyDir: {}

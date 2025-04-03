@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: splunk-config
+  namespace: splunk-cluster
+data:
+  splunk.secret: |
+    SPLUNK_PASSWORD=Chang3M3!
+    SPLUNK_START_ARGS=--accept-license
+    SPLUNK_ROLE=splunk_deployment_server
+  server.conf: |
+    [general]
+    serverName = splunk-deployment
+    [license]
+    active_group = Enterprise
+    [clustering]
+    mode = master
+    replication_factor = 1
+    search_factor = 1
+    pass4SymmKey = your_secret_key
+    cluster_label = splunk_cluster_1

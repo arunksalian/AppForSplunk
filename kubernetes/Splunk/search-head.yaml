@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: splunk-searchhead
+  namespace: splunk-cluster
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: splunk-searchhead
+  template:
+    metadata:
+      labels:
+        app: splunk-searchhead
+    spec:
+      containers:
+      - name: splunk
+        image: splunk/splunk:latest
+        ports:
+        - containerPort: 8000
+          name: web
+        - containerPort: 8089
+          name: mgmt
+        env:
+        - name: SPLUNK_START_ARGS
+          value: "--accept-license"
+        - name: SPLUNK_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: splunk-config
+              key: SPLUNK_PASSWORD
+        - name: SPLUNK_ROLE
+          value: "splunk_search_head"
+        volumeMounts:
+        - name: splunk-data
+          mountPath: /opt/splunk/var
+        resources:
+          requests:
+            cpu: "2"
+            memory: "4Gi"
+          limits:
+            cpu: "4"
+            memory: "8Gi"
+        readinessProbe:
+          httpGet:
+            path: /services/server/control/readiness_check
+            port: 8089
+            scheme: HTTPS
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /services/server/control/liveness_check
+            port: 8089
+            scheme: HTTPS
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+      volumes:
+      - name: splunk-data
+        persistentVolumeClaim:
+          claimName: splunk-searchhead-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: splunk-searchhead
+  namespace: splunk-cluster
+spec:
+  selector:
+    app: splunk-searchhead
+  ports:
+  - name: web
+    port: 8000
+    targetPort: web
+  - name: mgmt
+    port: 8089
+    targetPort: mgmt
+  type: ClusterIP

@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: splunk-deployment
+  namespace: splunk-cluster
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: splunk-deployment
+  template:
+    metadata:
+      labels:
+        app: splunk-deployment
+    spec:
+      containers:
+      - name: splunk
+        image: splunk/splunk:latest
+        ports:
+        - containerPort: 8000
+          name: web
+        - containerPort: 8089
+          name: mgmt
+        envFrom:
+        - configMapRef:
+            name: splunk-config
+            optional: false
+        volumeMounts:
+        - name: splunk-data
+          mountPath: /opt/splunk/var
+        - name: splunk-config-vol
+          mountPath: /opt/splunk/etc/system/local
+        resources:
+          requests:
+            cpu: "2"
+            memory: "4Gi"
+          limits:
+            cpu: "4"
+            memory: "8Gi"
+        readinessProbe:
+          httpGet:
+            path: /services/server/control/readiness_check
+            port: 8089
+            scheme: HTTPS
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /services/server/control/liveness_check
+            port: 8089
+            scheme: HTTPS
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+      volumes:
+      - name: splunk-data
+        persistentVolumeClaim:
+          claimName: splunk-deployment-pvc
+      - name: splunk-config-vol
+        configMap:
+          name: splunk-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: splunk-deployment
+  namespace: splunk-cluster
+spec:
+  selector:
+    app: splunk-deployment
+  ports:
+  - name: web
+    port: 8000
+    targetPort: web
+  - name: mgmt
+    port: 8089
+    targetPort: mgmt
+  type: ClusterIP
